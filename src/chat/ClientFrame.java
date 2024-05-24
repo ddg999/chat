@@ -9,7 +9,6 @@ public class ClientFrame extends JFrame {
 	private Client mContext;
 
 	private JTabbedPane tab;
-	private JPanel three;
 	private LoginPanel loginPanel;
 	private WaitingRoomPanel waitingRoomPanel;
 	private ChattingPanel chattingPanel;
@@ -32,11 +31,9 @@ public class ClientFrame extends JFrame {
 		tab = new JTabbedPane();
 		tab.setBounds(0, 0, 485, 590);
 
-		three = new JPanel();
-
 		tab.addTab("로그인", loginPanel);
-		tab.add("대기실", waitingRoomPanel);
-		tab.add("채팅방", chattingPanel);
+		tab.addTab("대기실", waitingRoomPanel);
+		tab.addTab("채팅방", chattingPanel);
 	}
 
 	private void setInitLayout() {
@@ -47,4 +44,17 @@ public class ClientFrame extends JFrame {
 
 		add(tab);
 	}
+
+	public LoginPanel getLoginPanel() {
+		return loginPanel;
+	}
+
+	public WaitingRoomPanel getWaitingRoomPanel() {
+		return waitingRoomPanel;
+	}
+
+	public ChattingPanel getChattingPanel() {
+		return chattingPanel;
+	}
+
 }
