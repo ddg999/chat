@@ -2,7 +2,6 @@ package chat;
 
 import java.awt.Color;
 import java.awt.ScrollPane;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -107,7 +106,6 @@ public class ServerFrame extends JFrame {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				System.out.println("서버 종료");
-				setVisible(false);
 				System.exit(0);
 			}
 		});

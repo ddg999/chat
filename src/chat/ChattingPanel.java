@@ -13,6 +13,8 @@ import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 
 public class ChattingPanel extends JPanel {
+	private Client mContext;
+
 	private ImageIcon background = new ImageIcon("images/background_bee.jpg");
 	private JPanel chatPanel;
 	private JPanel msgPanel;
@@ -22,7 +24,8 @@ public class ChattingPanel extends JPanel {
 	private JTextField msgBox;
 	private JButton msgSend;
 
-	public ChattingPanel() {
+	public ChattingPanel(Client mContext) {
+		this.mContext = mContext;
 		initData();
 		setInitLayout();
 	}

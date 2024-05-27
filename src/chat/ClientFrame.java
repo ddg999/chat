@@ -24,9 +24,9 @@ public class ClientFrame extends JFrame {
 		setSize(500, 630);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-		loginPanel = new LoginPanel();
-		waitingRoomPanel = new WaitingRoomPanel();
-		chattingPanel = new ChattingPanel();
+		loginPanel = new LoginPanel(mContext);
+		waitingRoomPanel = new WaitingRoomPanel(mContext);
+		chattingPanel = new ChattingPanel(mContext);
 
 		tab = new JTabbedPane();
 		tab.setBounds(0, 0, 485, 590);
