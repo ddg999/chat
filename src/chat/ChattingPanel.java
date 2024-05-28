@@ -51,6 +51,7 @@ public class ChattingPanel extends JPanel {
 		msgPanel.setBounds(30, 430, 420, 40);
 		msgPanel.setBackground(Color.white);
 
+		msgBtn.setEnabled(false);
 	}
 
 	private void setInitLayout() {
@@ -69,13 +70,15 @@ public class ChattingPanel extends JPanel {
 		msgBtn.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				sendMessage();
+				if (msgBtn.isEnabled()) {
+					sendMessage();
+				}
 			}
 		});
 		msgBox.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER && msgBtn.isEnabled()) {
 					sendMessage();
 				}
 			}
@@ -84,7 +87,7 @@ public class ChattingPanel extends JPanel {
 	}
 
 	private void sendMessage() {
-		if (!msgBox.getText().equals(null)) {
+		if (!msgBox.getText().equals("")) {
 			String msg = msgBox.getText();
 			mContext.clickMsgBtn(msg);
 			msgBox.setText("");
@@ -99,6 +102,10 @@ public class ChattingPanel extends JPanel {
 
 	public JTextArea getChatArea() {
 		return chatArea;
+	}
+
+	public JButton getMsgBtn() {
+		return msgBtn;
 	}
 
 }

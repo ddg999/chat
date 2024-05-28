@@ -11,7 +11,7 @@ import java.util.Vector;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 
-public class Client {
+public class Client implements Protocol {
 
 	private ClientFrame clientFrame;
 
@@ -53,23 +53,29 @@ public class Client {
 			socketWriter = new PrintWriter(socket.getOutputStream(), true);
 
 			writer(id + "\n");
-			System.out.println("연결완료");
 			clientFrame.getLoginPanel().getLoginBtn().setEnabled(false);
+			clientFrame.getLoginPanel().getHostIp().setEnabled(false);
+			clientFrame.getLoginPanel().getServerPort().setEnabled(false);
+			clientFrame.getLoginPanel().getNickName().setEnabled(false);
 			clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(true);
 			clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(true);
+			clientFrame.getWaitingRoomPanel().getSecretMsgBtn().setEnabled(true);
+			clientFrame.setTitle("[ IP : " + ip + " ]" + "[ PORT : " + port + " ] " + "[ ID : " + id + " ]");
 
 			readThread();
 		} catch (UnknownHostException e) {
-			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "서버를 확인할 수 없습니다");
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(null, "서버가 닫혀 있습니다");
+			JOptionPane.showMessageDialog(null, "서버를 확인할 수 없습니다");
 		}
 	}
 
+	// 클라이언트 -> 서버 메세지 전송하기
 	private void writer(String msg) {
 		socketWriter.println(msg);
 	}
 
+	// 클라이언트 측 리드 스레드
 	private void readThread() {
 		new Thread(() -> {
 			while (true) {
@@ -83,11 +89,13 @@ public class Client {
 		}).start();
 	}
 
+	// 프로토콜 체크 (구분자 :) protocol:data:message
 	private void checkProtocol(String msg) {
 		String[] parts = msg.split(":", 3);
 		protocol = parts[0];
 		data = parts[1];
 		message = parts[2];
+
 		if (protocol.equals("NewUser")) {
 			newUser();
 		} else if (protocol.equals("ConnectedUser")) {
@@ -108,11 +116,15 @@ public class Client {
 			chatting();
 		} else if (protocol.equals("SecretMsg")) {
 			secretMsg();
+		} else if (protocol.equals("UserOut")) {
+			userOut();
 		}
 	}
 
-	// 유저 목록 추가하기
+	// 유저 벡터, 리스트에 추가하기
+	@Override
 	public void newUser() {
+		// 동일한 아이디가 없을 때 추가
 		if (!data.equals(this.id)) {
 			userVector.add(data);
 			userList.setListData(userVector);
@@ -120,66 +132,86 @@ public class Client {
 	}
 
 	// 유저 목록 갱신하기
+	@Override
 	public void connectedUser() {
 		userVector.add(data);
 		userList.setListData(userVector);
 	}
 
 	// 방 목록 갱신하기
+	@Override
 	public void madeRoom() {
 		roomVector.add(data);
 		roomList.setListData(roomVector);
 	}
 
-	// 내 방 생성하기
+	// 방 생성하기
+	@Override
 	public void makeRoom() {
 		myRoomName = data;
+		clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(false);
+		clientFrame.getWaitingRoomPanel().getOutRoomBtn().setEnabled(true);
+		clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(false);
+		clientFrame.getChattingPanel().getMsgBtn().setEnabled(true);
 	}
 
 	// 방 목록 추가하기
+	@Override
 	public void newRoom() {
 		roomVector.add(data);
 		roomList.setListData(roomVector);
 	}
 
-	// 내 방 나가기
+	// 방 나가기
+	@Override
 	public void outRoom() {
 		myRoomName = null;
 		clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(true);
 		clientFrame.getWaitingRoomPanel().getOutRoomBtn().setEnabled(false);
 		clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(true);
-	}
-
-	// 방 목록 삭제하기
-	public void emptyRoom() {
-		roomVector.remove(data);
-		roomList.setListData(roomVector);
+		clientFrame.getChattingPanel().getChatArea().setText("");
 	}
 
 	// 방 입장하기
+	@Override
 	public void enterRoom() {
 		myRoomName = data;
 		clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(false);
 		clientFrame.getWaitingRoomPanel().getOutRoomBtn().setEnabled(true);
 		clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(false);
+		clientFrame.getChattingPanel().getMsgBtn().setEnabled(true);
 	}
 
 	// 채팅하기
+	@Override
 	public void chatting() {
 		if (id.equals(data)) {
 			clientFrame.getChattingPanel().getChatArea().append("[나] \n" + message + "\n");
 		} else if (data.equals("입장")) {
-			clientFrame.getChattingPanel().getChatArea().append("▶" + data + "◀" + message + "\n");
+			clientFrame.getChattingPanel().getChatArea().append("[" + data + "] " + message + "\n");
 		} else if (data.equals("퇴장")) {
-			clientFrame.getChattingPanel().getChatArea().append("▷" + data + "◁" + message + "\n");
+			clientFrame.getChattingPanel().getChatArea().append("[" + data + "] " + message + "\n");
 		} else {
-			clientFrame.getChattingPanel().getChatArea().append("[" + data + "] \n" + message + "\n");
+			clientFrame.getChattingPanel().getChatArea().append("[" + data + "]\n" + message + "\n");
 		}
 	}
 
-	// 쪽지 보내기
+	// 쪽지 창 띄우기
+	@Override
 	public void secretMsg() {
-		JOptionPane.showMessageDialog(null, data + "님의 쪽지\n\"" + message + "\"", "[쪽지]", JOptionPane.PLAIN_MESSAGE);
+		JOptionPane.showMessageDialog(null, message, "[" + data + "님의 쪽지]", JOptionPane.PLAIN_MESSAGE);
+	}
+
+	// 방 목록 벡터에서 방 삭제하기
+	public void emptyRoom() {
+		roomVector.remove(data);
+		roomList.setListData(roomVector);
+	}
+
+	// 유저 목록 벡터에서 유저 삭제하기
+	public void userOut() {
+		userVector.remove(data);
+		userList.setListData(userVector);
 	}
 
 	// 방 생성 서버호출
@@ -188,8 +220,8 @@ public class Client {
 	}
 
 	// 방 나가기 서버호출
-	public void clickOutRoomBtn(String roomName) {
-		writer("OutRoom:" + roomName + ": ");
+	public void clickOutRoomBtn() {
+		writer("OutRoom:" + myRoomName + ": ");
 	}
 
 	// 방 입장 서버호출
@@ -197,14 +229,19 @@ public class Client {
 		writer("EnterRoom:" + roomName + ": ");
 	}
 
-	// 쪽지 보내기 서버호출
+	// 채팅 전송하기 서버호출
 	public void clickMsgBtn(String msg) {
 		writer("Chatting:" + myRoomName + ":" + msg);
 	}
 
+	// 쪽지 보내기 서버호출
 	public void clickSecretMsgBtn(String msg) {
 		String user = userList.getSelectedValue();
-		writer("SecretMsg:" + user + ":" + msg);
+		if (!user.equals(id)) {
+			writer("SecretMsg:" + user + ":" + msg);
+		} else {
+			JOptionPane.showMessageDialog(null, "자신에게 보낼 수 없습니다");
+		}
 	}
 
 	public JList<String> getUserList() {

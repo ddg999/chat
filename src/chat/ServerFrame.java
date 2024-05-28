@@ -9,6 +9,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -18,8 +19,7 @@ import javax.swing.border.TitledBorder;
 public class ServerFrame extends JFrame {
 
 	private Server mContext;
-
-	private JLabel background = new JLabel(new ImageIcon("images/background_bee.jpg"));
+	private JLabel background;
 	private JPanel serverMsgPanel;
 	private JPanel portPanel;
 	private JButton startBtn;
@@ -37,6 +37,7 @@ public class ServerFrame extends JFrame {
 	}
 
 	private void initData() {
+		background = new JLabel(new ImageIcon("images/background_bee.jpg"));
 		setTitle("Server Page");
 		setSize(500, 630);
 		setContentPane(background);
@@ -80,29 +81,24 @@ public class ServerFrame extends JFrame {
 		portPanel.add(textPortNumber);
 		portPanel.add(startBtn);
 		portPanel.add(exitBtn);
-
 	}
 
 	private void addEventListener() {
 		startBtn.addMouseListener(new MouseAdapter() {
 			@Override
-			public void mousePressed(MouseEvent e) {
+			public void mouseClicked(MouseEvent e) {
 				if (startBtn.isEnabled()) {
-					System.out.println("서버 실행");
-					mContext.startServer(Integer.valueOf(textPortNumber.getText()));
+					try {
+						mContext.startServer(Integer.valueOf(textPortNumber.getText()));
+					} catch (NumberFormatException e2) {
+						JOptionPane.showMessageDialog(null, "잘못된 포트 번호입니다.");
+					}
 				}
 			}
-
-			@Override
-			public void mouseReleased(MouseEvent e) {
-				startBtn.setEnabled(false);
-			}
-
 		});
 		exitBtn.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				System.out.println("서버 종료");
 				System.exit(0);
 			}
 		});

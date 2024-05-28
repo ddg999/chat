@@ -8,9 +8,16 @@ public class ClientFrame extends JFrame {
 
 	private Client mContext;
 
+	// 탭
 	private JTabbedPane tab;
+
+	// 로그인창
 	private LoginPanel loginPanel;
+
+	// 대기창
 	private WaitingRoomPanel waitingRoomPanel;
+
+	// 채팅창
 	private ChattingPanel chattingPanel;
 
 	public ClientFrame(Client mContext) {

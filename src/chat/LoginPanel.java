@@ -6,6 +6,7 @@ import java.awt.event.MouseEvent;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -51,13 +52,17 @@ public class LoginPanel extends JPanel {
 	}
 
 	private void login() {
-		if (!hostIp.getText().equals(null) && !serverPort.getText().equals(null) && !nickName.getText().equals(null)) {
+		if (!hostIp.getText().equals("") && !serverPort.getText().equals("") && !nickName.getText().equals("")) {
 			String ip = hostIp.getText();
-			int port = Integer.valueOf(serverPort.getText());
-			String name = nickName.getText();
-			mContext.clickLoginBtn(ip, port, name);
+			try {
+				int port = Integer.parseInt(serverPort.getText());
+				String name = nickName.getText();
+				mContext.clickLoginBtn(ip, port, name);
+			} catch (NumberFormatException e) {
+				JOptionPane.showMessageDialog(null, "잘못된 입력입니다");
+			}
 		} else {
-			System.out.println("올바른 입력이 아닙니다");
+			JOptionPane.showMessageDialog(null, "빈 칸을 채워주세요");
 		}
 	}
 
@@ -71,7 +76,6 @@ public class LoginPanel extends JPanel {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (loginBtn.isEnabled()) {
-					System.out.println("클라이언트 로그인");
 					login();
 				}
 			}
@@ -80,14 +84,24 @@ public class LoginPanel extends JPanel {
 		exitBtn.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				System.out.println("클라이언트 종료");
 				System.exit(0);
 			}
 		});
-
 	}
 
 	public JButton getLoginBtn() {
 		return loginBtn;
+	}
+
+	public JTextField getHostIp() {
+		return hostIp;
+	}
+
+	public JTextField getServerPort() {
+		return serverPort;
+	}
+
+	public JTextField getNickName() {
+		return nickName;
 	}
 }

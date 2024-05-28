@@ -67,6 +67,7 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 		makeRoomBtn.setEnabled(false);
 		outRoomBtn.setEnabled(false);
 		enterRoomBtn.setEnabled(false);
+		secretMsgBtn.setEnabled(false);
 	}
 
 	private void setInitLayout() {
@@ -89,34 +90,6 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 		outRoomBtn.addActionListener(this);
 		enterRoomBtn.addActionListener(this);
 		secretMsgBtn.addActionListener(this);
-//		makeRoomBtn.addMouseListener(new MouseAdapter() {
-//			@Override
-//			public void mouseClicked(MouseEvent e) {
-//				if (makeRoomBtn.isEnabled()) {
-//					String roomName = JOptionPane.showInputDialog("[ 방 이름 설정 ]");
-//					if (!roomName.equals(null)) {
-//						mContext.clickMakeRoomBtn(roomName);
-//						makeRoomBtn.setEnabled(false);
-//						outRoomBtn.setEnabled(true);
-//					}
-//				}
-//			}
-//		});
-//		outRoomBtn.addMouseListener(new MouseAdapter() {
-//			@Override
-//			public void mouseClicked(MouseEvent e) {
-//				if (outRoomBtn.isEnabled()) {
-//					String roomName = mContext.getRoomList().getSelectedValue();
-//					mContext.clickOutRoomBtn(roomName);
-//					mContext.getRoomList().setSelectedValue(null, false);
-//					makeRoomBtn.setEnabled(true);
-//					outRoomBtn.setEnabled(false);
-//				}
-//			}
-//		});
-//		enterRoomBtn.addMouseListener(new MouseAdapter() {
-//
-//		});
 	}
 
 	@Override
@@ -125,22 +98,16 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 			String roomName = JOptionPane.showInputDialog("[ 방 이름 설정 ]");
 			if (!roomName.equals(null)) {
 				mContext.clickMakeRoomBtn(roomName);
-				makeRoomBtn.setEnabled(false);
-				outRoomBtn.setEnabled(true);
-				enterRoomBtn.setEnabled(false);
 			}
-		} else if (e.getSource() == outRoomBtn && mContext.getRoomList().getSelectedIndex() != -1) {
-			String roomName = mContext.getRoomList().getSelectedValue();
-			mContext.clickOutRoomBtn(roomName);
-			mContext.getRoomList().setSelectedValue(null, false);
+		} else if (e.getSource() == outRoomBtn) {
+			mContext.clickOutRoomBtn();
 		} else if (e.getSource() == enterRoomBtn && mContext.getRoomList().getSelectedIndex() != -1) {
 			String roomName = mContext.getRoomList().getSelectedValue();
 			mContext.clickEnterRoomBtn(roomName);
 			mContext.getRoomList().setSelectedValue(null, false);
-		} else if (e.getSource() == secretMsgBtn) {
-			System.out.println("쪽지 전송 클릭");
+		} else if (e.getSource() == secretMsgBtn && mContext.getUserList().getSelectedIndex() != -1) {
 			String msg = secretMsg.getText();
-			if (!msg.equals(null)) {
+			if (!msg.equals("")) {
 				mContext.clickSecretMsgBtn(msg);
 				secretMsg.setText("");
 				mContext.getUserList().setSelectedValue(null, false);
@@ -163,6 +130,10 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 
 	public JButton getEnterRoomBtn() {
 		return enterRoomBtn;
+	}
+
+	public JButton getSecretMsgBtn() {
+		return secretMsgBtn;
 	}
 
 }
