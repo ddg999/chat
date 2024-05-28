@@ -9,6 +9,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.border.LineBorder;
 import javax.swing.border.TitledBorder;
 
@@ -16,12 +17,18 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 	private Client mContext;
 
 	private ImageIcon background = new ImageIcon("images/background_bee.jpg");
+
 	private JPanel userListPanel;
 	private JPanel roomListPanel;
+	private JPanel secretMsgPanel;
+
 	private JPanel roomBtnPanel;
 	private JButton makeRoomBtn;
 	private JButton outRoomBtn;
 	private JButton enterRoomBtn;
+
+	private JTextField secretMsg;
+	private JButton secretMsgBtn;
 
 	public WaitingRoomPanel(Client mContext) {
 		this.mContext = mContext;
@@ -34,10 +41,14 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 		userListPanel = new JPanel();
 		roomListPanel = new JPanel();
 		roomBtnPanel = new JPanel();
+		secretMsgPanel = new JPanel();
 
 		makeRoomBtn = new JButton("방 만들기");
 		outRoomBtn = new JButton("방 나가기");
 		enterRoomBtn = new JButton("입장하기");
+		secretMsgBtn = new JButton("쪽지보내기");
+
+		secretMsg = new JTextField(20);
 
 		userListPanel.setBounds(80, 20, 140, 350);
 		userListPanel.setBackground(Color.white);
@@ -47,8 +58,11 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 		roomListPanel.setBackground(Color.white);
 		roomListPanel.setBorder(new TitledBorder(new LineBorder(Color.lightGray, 2), "방목록"));
 
-		roomBtnPanel.setBounds(110, 380, 280, 35);
+		roomBtnPanel.setBounds(110, 380, 280, 32);
 		roomBtnPanel.setBackground(Color.white);
+
+		secretMsgPanel.setBounds(80, 420, 330, 32);
+		secretMsgPanel.setBackground(Color.white);
 
 		makeRoomBtn.setEnabled(false);
 		outRoomBtn.setEnabled(false);
@@ -65,12 +79,16 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 		roomBtnPanel.add(makeRoomBtn);
 		roomBtnPanel.add(outRoomBtn);
 		roomBtnPanel.add(enterRoomBtn);
+		add(secretMsgPanel);
+		secretMsgPanel.add(secretMsg);
+		secretMsgPanel.add(secretMsgBtn);
 	}
 
 	private void addEventListener() {
 		makeRoomBtn.addActionListener(this);
 		outRoomBtn.addActionListener(this);
 		enterRoomBtn.addActionListener(this);
+		secretMsgBtn.addActionListener(this);
 //		makeRoomBtn.addMouseListener(new MouseAdapter() {
 //			@Override
 //			public void mouseClicked(MouseEvent e) {
@@ -109,16 +127,25 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 				mContext.clickMakeRoomBtn(roomName);
 				makeRoomBtn.setEnabled(false);
 				outRoomBtn.setEnabled(true);
+				enterRoomBtn.setEnabled(false);
 			}
 		} else if (e.getSource() == outRoomBtn && mContext.getRoomList().getSelectedIndex() != -1) {
 			String roomName = mContext.getRoomList().getSelectedValue();
 			mContext.clickOutRoomBtn(roomName);
 			mContext.getRoomList().setSelectedValue(null, false);
-			makeRoomBtn.setEnabled(true);
-			outRoomBtn.setEnabled(false);
-		} else if (e.getSource() == enterRoomBtn) {
+		} else if (e.getSource() == enterRoomBtn && mContext.getRoomList().getSelectedIndex() != -1) {
+			String roomName = mContext.getRoomList().getSelectedValue();
+			mContext.clickEnterRoomBtn(roomName);
+			mContext.getRoomList().setSelectedValue(null, false);
+		} else if (e.getSource() == secretMsgBtn) {
+			System.out.println("쪽지 전송 클릭");
+			String msg = secretMsg.getText();
+			if (!msg.equals(null)) {
+				mContext.clickSecretMsgBtn(msg);
+				secretMsg.setText("");
+				mContext.getUserList().setSelectedValue(null, false);
+			}
 		}
-
 	}
 
 	@Override

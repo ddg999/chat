@@ -73,7 +73,6 @@ public class LoginPanel extends JPanel {
 				if (loginBtn.isEnabled()) {
 					System.out.println("클라이언트 로그인");
 					login();
-					loginBtn.setEnabled(false);
 				}
 			}
 		});
@@ -86,5 +85,9 @@ public class LoginPanel extends JPanel {
 			}
 		});
 
+	}
+
+	public JButton getLoginBtn() {
+		return loginBtn;
 	}
 }

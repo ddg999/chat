@@ -53,16 +53,13 @@ public class ServerFrame extends JFrame {
 
 		portPanel = new JPanel();
 		portPanel.setBackground(Color.white);
-		portPanel.setBounds(70, 420, 370, 35);
+		portPanel.setBounds(80, 420, 330, 32);
 
 		startBtn = new JButton("서버 실행");
-		startBtn.setBounds(130, 530, 100, 30);
 		exitBtn = new JButton("서버 종료");
-		exitBtn.setBounds(260, 530, 100, 30);
 
 		textPortNumber = new JTextField(7);
 		textPortNumber.setText("5000");
-		textPortNumber.setBounds(170, 488, 200, 20);
 
 		portNumber = new JLabel("포트 번호");
 	}

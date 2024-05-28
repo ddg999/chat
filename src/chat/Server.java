@@ -21,6 +21,7 @@ public class Server {
 	// 프로토콜 변수
 	private String protocol;
 	private String data;
+	private String message;
 
 	// 접속한 유저 벡터
 	private Vector<ConnectedUser> connectedUsers = new Vector<>();
@@ -102,32 +103,40 @@ public class Server {
 
 		public void newUser() {
 			connectedUsers.add(this);
-			broadCast("NewUser:" + id);
+			broadCast("NewUser:" + id + ": ");
 		}
 
 		public void connectedUser() {
 			for (int i = 0; i < connectedUsers.size(); i++) {
 				ConnectedUser user = connectedUsers.elementAt(i);
-				writer("ConnectedUser:" + user.id);
+				writer("ConnectedUser:" + user.id + ": ");
 			}
 		}
 
 		public void madeRoom() {
 			for (int i = 0; i < madeRooms.size(); i++) {
 				MyRoom myRoom = madeRooms.elementAt(i);
-				writer("MadeRoom:" + myRoom.roomName);
+				writer("MadeRoom:" + myRoom.roomName + ": ");
 			}
 		}
 
 		public void checkProtocol(String msg) {
 			if (!msg.equals("")) { // TODO 오류 때문에 조건문 설정해놓음, 오류 안뜨는 다른 방법 찾기
-				String[] parts = msg.split(":", 2);
+				String[] parts = msg.split(":", 3);
 				protocol = parts[0];
 				data = parts[1];
+				message = parts[2];
+
 				if (protocol.equals("MakeRoom")) {
 					makeRoom();
 				} else if (protocol.equals("OutRoom")) {
 					outRoom();
+				} else if (protocol.equals("EnterRoom")) {
+					enterRoom();
+				} else if (protocol.equals("Chatting")) {
+					chatting();
+				} else if (protocol.equals("SecretMsg")) {
+					secretMsg();
 				}
 			}
 		}
@@ -139,11 +148,11 @@ public class Server {
 			serverMsgWriter("[방 생성] " + id + "_" + myRoomName + "\n");
 
 			newRoom();
-			writer("MakeRoom:" + data);
+			writer("MakeRoom:" + data + ": ");
 		}
 
 		public void newRoom() {
-			broadCast("NewRoom:" + data);
+			broadCast("NewRoom:" + data + ": ");
 		}
 
 		public void outRoom() {
@@ -152,10 +161,44 @@ public class Server {
 
 				if (myRoom.roomName.equals(data)) {
 					myRoomName = null;
-//					myRoom.roomBroadCast("Chatting/퇴장/" + id + "님 퇴장");
+					myRoom.roomBroadCast("Chatting:퇴장:" + id + "님 퇴장");
 					serverMsgWriter("[방 퇴장]" + id + "_" + data + "\n");
 					myRoom.removeRoom(this);
-					writer("OutRoom:" + data);
+					writer("OutRoom:" + data + ": ");
+				}
+			}
+		}
+
+		public void enterRoom() {
+			for (int i = 0; i < madeRooms.size(); i++) {
+				MyRoom myRoom = madeRooms.elementAt(i);
+
+				if (myRoom.roomName.equals(data)) {
+					myRoomName = data;
+					myRoom.addUser(this);
+					myRoom.roomBroadCast("Chatting:입장:" + id + "님 입장");
+					serverMsgWriter("[입장]" + data + " 방_" + id + "\n");
+					writer("EnterRoom:" + data + ": ");
+				}
+			}
+		}
+
+		public void chatting() {
+			serverMsgWriter("[채팅] " + data + "_" + id + "_" + message + "\n");
+			for (int i = 0; i < madeRooms.size(); i++) {
+				MyRoom myRoom = madeRooms.elementAt(i);
+				if (myRoom.roomName.equals(data)) {
+					myRoom.roomBroadCast("Chatting:" + id + ":" + message);
+				}
+			}
+		}
+
+		public void secretMsg() {
+			serverMsgWriter("[쪽지] " + id + "ㅡ>" + data + "_" + message + "\n");
+			for (int i = 0; i < connectedUsers.size(); i++) {
+				ConnectedUser user = connectedUsers.elementAt(i);
+				if (user.id.equals(data)) {
+					user.writer("SecretMsg:" + id + ":" + message);
 				}
 			}
 		}
@@ -174,14 +217,18 @@ public class Server {
 	}
 
 	private class MyRoom {
-		// MyRoom에 들어온 유저 정보
 
+		// MyRoom에 들어온 유저 정보
 		private String roomName;
 		private Vector<ConnectedUser> myRoom = new Vector<>();
 
 		public MyRoom(String roomName, ConnectedUser connectedUser) {
 			this.roomName = roomName;
 			this.myRoom.add(connectedUser);
+		}
+
+		private void addUser(ConnectedUser connectedUser) {
+			myRoom.add(connectedUser);
 		}
 
 		private void removeRoom(ConnectedUser user) {
@@ -194,11 +241,18 @@ public class Server {
 					if (myRoom.roomName.equals(roomName)) {
 						madeRooms.remove(this);
 						serverMsgWriter("[방 삭제]" + user.id + "_" + data + "\n");
-//						roomBroadCast("OutRoom/" + data);
-						broadCast("EmptyRoom:" + data);
+						roomBroadCast("OutRoom:" + data + ": ");
+						broadCast("EmptyRoom:" + data + ": ");
 						break;
 					}
 				}
+			}
+		}
+
+		private void roomBroadCast(String msg) {
+			for (int i = 0; i < myRoom.size(); i++) {
+				ConnectedUser user = myRoom.elementAt(i);
+				user.writer(msg);
 			}
 		}
 	}

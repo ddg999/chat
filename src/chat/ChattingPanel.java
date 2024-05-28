@@ -3,6 +3,10 @@ package chat;
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.ScrollPane;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -22,12 +26,13 @@ public class ChattingPanel extends JPanel {
 
 	private JTextArea chatArea;
 	private JTextField msgBox;
-	private JButton msgSend;
+	private JButton msgBtn;
 
 	public ChattingPanel(Client mContext) {
 		this.mContext = mContext;
 		initData();
 		setInitLayout();
+		addEventListener();
 	}
 
 	private void initData() {
@@ -36,14 +41,14 @@ public class ChattingPanel extends JPanel {
 		scrollPane = new ScrollPane();
 		chatArea = new JTextArea();
 		msgBox = new JTextField(30);
-		msgSend = new JButton("전송");
+		msgBtn = new JButton("전송");
 
 		chatPanel.setBounds(30, 30, 420, 400);
 		chatPanel.setBackground(Color.white);
 		chatPanel.setBorder(new TitledBorder(new LineBorder(Color.white, 3), "채팅창"));
 		scrollPane.setBounds(30, 30, 400, 370);
 
-		msgPanel.setBounds(30, 450, 420, 40);
+		msgPanel.setBounds(30, 430, 420, 40);
 		msgPanel.setBackground(Color.white);
 
 	}
@@ -57,11 +62,43 @@ public class ChattingPanel extends JPanel {
 		scrollPane.add(chatArea);
 		add(msgPanel);
 		msgPanel.add(msgBox);
-		msgPanel.add(msgSend);
+		msgPanel.add(msgBtn);
+	}
+
+	private void addEventListener() {
+		msgBtn.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				sendMessage();
+			}
+		});
+		msgBox.addKeyListener(new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					sendMessage();
+				}
+			}
+		});
+
+	}
+
+	private void sendMessage() {
+		if (!msgBox.getText().equals(null)) {
+			String msg = msgBox.getText();
+			mContext.clickMsgBtn(msg);
+			msgBox.setText("");
+			msgBox.requestFocus();
+		}
 	}
 
 	@Override
 	protected void paintComponent(Graphics g) {
 		g.drawImage(background.getImage(), 0, 0, null);
 	}
+
+	public JTextArea getChatArea() {
+		return chatArea;
+	}
+
 }
