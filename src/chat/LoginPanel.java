@@ -1,8 +1,8 @@
 package chat;
 
 import java.awt.Graphics;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -10,9 +10,10 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-public class LoginPanel extends JPanel {
+public class LoginPanel extends JPanel implements ActionListener {
 	private Client mContext;
 	private JButton loginBtn;
+	private JButton logoutBtn;
 	private JButton exitBtn;
 	private JTextField hostIp;
 	private JTextField serverPort;
@@ -28,9 +29,13 @@ public class LoginPanel extends JPanel {
 
 	private void initData() {
 		loginBtn = new JButton("로그인");
-		loginBtn.setBounds(120, 450, 100, 30);
-		exitBtn = new JButton("나가기");
-		exitBtn.setBounds(250, 450, 100, 30);
+		loginBtn.setBounds(90, 450, 90, 30);
+		logoutBtn = new JButton("로그아웃");
+		logoutBtn.setBounds(200, 450, 90, 30);
+		logoutBtn.setEnabled(false);
+		exitBtn = new JButton("종료");
+		exitBtn.setBounds(310, 450, 90, 30);
+
 		hostIp = new JTextField();
 		hostIp.setBounds(180, 255, 200, 30);
 		hostIp.setText("localhost");
@@ -40,11 +45,13 @@ public class LoginPanel extends JPanel {
 		nickName = new JTextField();
 		nickName.setBounds(180, 395, 200, 30);
 		nickName.setText("홍길동");
+
 	}
 
 	private void setInitLayout() {
 		setLayout(null);
 		add(loginBtn);
+		add(logoutBtn);
 		add(exitBtn);
 		add(hostIp);
 		add(serverPort);
@@ -72,25 +79,28 @@ public class LoginPanel extends JPanel {
 	}
 
 	private void addEventListener() {
-		loginBtn.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				if (loginBtn.isEnabled()) {
-					login();
-				}
-			}
-		});
+		loginBtn.addActionListener(this);
+		logoutBtn.addActionListener(this);
+		exitBtn.addActionListener(this);
+	}
 
-		exitBtn.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				System.exit(0);
-			}
-		});
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == loginBtn) {
+			login();
+		} else if (e.getSource() == logoutBtn) {
+			mContext.clickLogoutBtn();
+		} else if (e.getSource() == exitBtn) {
+			System.exit(0);
+		}
 	}
 
 	public JButton getLoginBtn() {
 		return loginBtn;
+	}
+
+	public JButton getLogoutBtn() {
+		return logoutBtn;
 	}
 
 	public JTextField getHostIp() {

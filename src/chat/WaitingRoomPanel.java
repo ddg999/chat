@@ -95,8 +95,10 @@ public class WaitingRoomPanel extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == makeRoomBtn) {
-			String roomName = JOptionPane.showInputDialog("[ 방 이름 설정 ]");
-			if (!roomName.equals(null)) {
+			String roomName = JOptionPane.showInputDialog("[ 방 이름 입력 ]");
+			if (roomName.equals("")) {
+				JOptionPane.showMessageDialog(null, "방 이름을 입력해주세요");
+			} else {
 				mContext.clickMakeRoomBtn(roomName);
 			}
 		} else if (e.getSource() == outRoomBtn) {

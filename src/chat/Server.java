@@ -73,33 +73,27 @@ public class Server {
 	private class ConnectedUser extends Thread implements Protocol {
 		private Socket socket;
 
+		// 서버 측 입출력 변수
 		private PrintWriter socketWriter;
 		private BufferedReader socketReader;
 
+		// 서버 측에서 관리 할 아이디, 방 이름 변수
 		private String id;
 		private String myRoomName;
 
-		//
+		// 접속종료 변수
+		private boolean logout;
+
 		public ConnectedUser(Socket socket) {
 			this.socket = socket;
-			// 입출력 연결
 			connectIO();
-
-			newUser();
-
-			connectedUser();
-
-			madeRoom();
 		}
 
-		// 서버 측 입/출력 장치 생성
+		// 서버 측 입출력 스트림 생성
 		private void connectIO() {
 			try {
 				socketWriter = new PrintWriter(socket.getOutputStream(), true);
 				socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
-				id = socketReader.readLine();
-				serverMsgWriter("[접속] " + id + "님 입장\n");
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
@@ -110,11 +104,34 @@ public class Server {
 			socketWriter.println(msg);
 		}
 
-		// 기존 유저에게 새로운 유저를 목록에 추가
+		// 새로운 유저 추가
 		@Override
 		public void newUser() {
-			connectedUsers.add(this);
-			broadCast("NewUser:" + id + ": ");
+			// 닉네임 중복 구분 변수
+			boolean duplicateName = false;
+			for (ConnectedUser connectedUser : connectedUsers) {
+				if (data.equals(connectedUser.id)) {
+					serverMsgWriter("[로그인에러] 중복닉네임_" + data + "\n");
+					writer("LoginError:" + data + ": ");
+					duplicateName = true;
+					logout = true;
+					try {
+						socket.close();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					break;
+				}
+			}
+			if (!duplicateName) {
+				id = data;
+				serverMsgWriter("[알림] " + id + "님 로그인\n");
+				connectedUsers.add(this);
+				broadCast("NewUser:" + id + ": ");
+
+				connectedUser();
+				madeRoom();
+			}
 		}
 
 		// 새로운 유저에게 기존 유저 목록 갱신
@@ -135,15 +152,16 @@ public class Server {
 			}
 		}
 
-		// 프로토콜 체크
+		// 프로토콜 체크 (구분자 :) protocol:data:message
 		public void checkProtocol(String msg) {
-			if (!msg.equals("")) { // TODO 오류 때문에 조건문 설정해놓음, 오류 안뜨는 다른 방법 찾기
+			try {
 				String[] parts = msg.split(":", 3);
 				protocol = parts[0];
 				data = parts[1];
 				message = parts[2];
-
-				if (protocol.equals("MakeRoom")) {
+				if (protocol.equals("NewUser")) {
+					newUser();
+				} else if (protocol.equals("MakeRoom")) {
 					makeRoom();
 				} else if (protocol.equals("OutRoom")) {
 					outRoom();
@@ -153,20 +171,34 @@ public class Server {
 					chatting();
 				} else if (protocol.equals("SecretMsg")) {
 					secretMsg();
+				} else if (protocol.equals("Logout")) {
+					logout();
 				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 
 		// 새로운 방 생성하기
 		@Override
 		public void makeRoom() {
-			myRoomName = data;
-			MyRoom myRoom = new MyRoom(myRoomName, this);
-			madeRooms.add(myRoom);
-			serverMsgWriter("[방 생성] " + id + "_" + myRoomName + "\n");
-
-			newRoom();
-			writer("MakeRoom:" + data + ": ");
+			// 방 이름 중복 구분 변수
+			boolean duplicateRoom = false;
+			for (MyRoom myRoom : madeRooms) {
+				if (data.equals(myRoom.roomName)) {
+					serverMsgWriter("[방생성에러] 방이름중복_" + data + "\n");
+					duplicateRoom = true;
+					break;
+				}
+			}
+			if (!duplicateRoom) {
+				MyRoom myRoom = new MyRoom(data, this);
+				madeRooms.add(myRoom);
+				serverMsgWriter("[방 생성] " + id + "_" + data + "\n");
+				newRoom();
+				writer("Chatting:입장:" + id + "님 입장");
+				writer("MakeRoom:" + data + ": ");
+			}
 		}
 
 		// 방 목록 갱신
@@ -196,7 +228,6 @@ public class Server {
 			for (int i = 0; i < madeRooms.size(); i++) {
 				MyRoom myRoom = madeRooms.elementAt(i);
 				if (myRoom.roomName.equals(data)) {
-					myRoomName = data;
 					myRoom.addUser(this);
 					myRoom.roomBroadCast("Chatting:입장:" + id + "님 입장");
 					serverMsgWriter("[방 입장] " + data + " 방_" + id + "\n");
@@ -228,16 +259,33 @@ public class Server {
 			}
 		}
 
+		// 로그아웃
+		public void logout() {
+			serverMsgWriter("[알림] " + data + "님 로그아웃\n");
+			writer("Logout:" + data + ": ");
+
+			outRoom();
+			connectedUsers.remove(this);
+			broadCast("UserOut:" + id + ": ");
+
+			logout = true;
+			try {
+				socket.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+
 		@Override
 		public void run() {
 			try {
-				while (true) {
+				while (!logout) {
 					String msg = socketReader.readLine();
 					checkProtocol(msg);
 				}
 			} catch (IOException e) {
+				e.printStackTrace();
 				serverMsgWriter("[에러] " + id + "님 접속 끊김\n");
-				JOptionPane.showMessageDialog(null, id + "님의 접속이 끊어졌습니다", "[알림]", JOptionPane.ERROR_MESSAGE);
 				outRoom();
 				connectedUsers.remove(this);
 				broadCast("UserOut:" + id + ": ");

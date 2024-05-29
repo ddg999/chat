@@ -38,29 +38,25 @@ public class Client implements Protocol {
 	private String data;
 	private String message;
 
+	// 접속 종료, 로그아웃 상태 변수
+	private boolean logout;
+
 	public Client() {
 		clientFrame = new ClientFrame(this);
 	}
 
+	// 로그인 버튼 클릭, 소켓 생성, reaThread 생성
 	public void clickLoginBtn(String ip, int port, String id) {
+		logout = false;
 		this.ip = ip;
 		this.port = port;
 		this.id = id;
-
 		try {
 			socket = new Socket(ip, port);
 			socketReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			socketWriter = new PrintWriter(socket.getOutputStream(), true);
 
-			writer(id + "\n");
-			clientFrame.getLoginPanel().getLoginBtn().setEnabled(false);
-			clientFrame.getLoginPanel().getHostIp().setEnabled(false);
-			clientFrame.getLoginPanel().getServerPort().setEnabled(false);
-			clientFrame.getLoginPanel().getNickName().setEnabled(false);
-			clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(true);
-			clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(true);
-			clientFrame.getWaitingRoomPanel().getSecretMsgBtn().setEnabled(true);
-			clientFrame.setTitle("[ IP : " + ip + " ]" + "[ PORT : " + port + " ] " + "[ ID : " + id + " ]");
+			writer("NewUser:" + id + ": ");
 
 			readThread();
 		} catch (UnknownHostException e) {
@@ -75,15 +71,17 @@ public class Client implements Protocol {
 		socketWriter.println(msg);
 	}
 
-	// 클라이언트 측 리드 스레드
+	// 클라이언트 측 readThread
 	private void readThread() {
 		new Thread(() -> {
-			while (true) {
+			while (!logout) {
 				try {
-					String protocol = socketReader.readLine();
-					checkProtocol(protocol);
+					String msg = socketReader.readLine();
+					checkProtocol(msg);
 				} catch (IOException e) {
 					e.printStackTrace();
+					logout = true;
+					System.out.println("서버가 종료되었습니다");
 				}
 			}
 		}).start();
@@ -91,51 +89,107 @@ public class Client implements Protocol {
 
 	// 프로토콜 체크 (구분자 :) protocol:data:message
 	private void checkProtocol(String msg) {
-		String[] parts = msg.split(":", 3);
-		protocol = parts[0];
-		data = parts[1];
-		message = parts[2];
+		try {
+			String[] parts = msg.split(":", 3);
+			protocol = parts[0];
+			data = parts[1];
+			message = parts[2];
 
-		if (protocol.equals("NewUser")) {
-			newUser();
-		} else if (protocol.equals("ConnectedUser")) {
-			connectedUser();
-		} else if (protocol.equals("MadeRoom")) {
-			madeRoom();
-		} else if (protocol.equals("MakeRoom")) {
-			makeRoom();
-		} else if (protocol.equals("NewRoom")) {
-			newRoom();
-		} else if (protocol.equals("OutRoom")) {
-			outRoom();
-		} else if (protocol.equals("EnterRoom")) {
-			enterRoom();
-		} else if (protocol.equals("EmptyRoom")) {
-			emptyRoom();
-		} else if (protocol.equals("Chatting")) {
-			chatting();
-		} else if (protocol.equals("SecretMsg")) {
-			secretMsg();
-		} else if (protocol.equals("UserOut")) {
-			userOut();
+			if (protocol.equals("NewUser")) {
+				newUser();
+			} else if (protocol.equals("ConnectedUser")) {
+				connectedUser();
+			} else if (protocol.equals("MadeRoom")) {
+				madeRoom();
+			} else if (protocol.equals("MakeRoom")) {
+				makeRoom();
+			} else if (protocol.equals("NewRoom")) {
+				newRoom();
+			} else if (protocol.equals("OutRoom")) {
+				outRoom();
+			} else if (protocol.equals("EnterRoom")) {
+				enterRoom();
+			} else if (protocol.equals("EmptyRoom")) {
+				emptyRoom();
+			} else if (protocol.equals("Chatting")) {
+				chatting();
+			} else if (protocol.equals("SecretMsg")) {
+				secretMsg();
+			} else if (protocol.equals("UserOut")) {
+				userOut();
+			} else if (protocol.equals("LoginError")) {
+				loginError();
+			} else if (protocol.equals("Logout")) {
+				logout();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
 	}
 
-	// 유저 벡터, 리스트에 추가하기
+	// 새로운 유저를 벡터, 리스트에 추가하기
 	@Override
 	public void newUser() {
-		// 동일한 아이디가 없을 때 추가
-		if (!data.equals(this.id)) {
-			userVector.add(data);
-			userList.setListData(userVector);
+		userVector.add(data);
+		userList.setListData(userVector);
+
+		if (id.equals(data)) {
+			clientFrame.getLoginPanel().getLoginBtn().setEnabled(false);
+			clientFrame.getLoginPanel().getLogoutBtn().setEnabled(true);
+			clientFrame.getLoginPanel().getHostIp().setEnabled(false);
+			clientFrame.getLoginPanel().getServerPort().setEnabled(false);
+			clientFrame.getLoginPanel().getNickName().setEnabled(false);
+			clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(true);
+			clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(true);
+			clientFrame.getWaitingRoomPanel().getSecretMsgBtn().setEnabled(true);
+			clientFrame.setTitle("[ IP : " + ip + " ]" + "[ PORT : " + port + " ] " + "[ ID : " + id + " ]");
 		}
+	}
+
+	public void loginError() {
+		JOptionPane.showMessageDialog(null, "이미 존재하는 닉네임입니다");
+		logout = true;
+		try {
+			socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	public void logout() {
+		logout = true;
+		try {
+			socket.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		userVector.removeAllElements();
+		userList.setListData(userVector);
+		roomVector.removeAllElements();
+		roomList.setListData(roomVector);
+
+		clientFrame.getLoginPanel().getLoginBtn().setEnabled(true);
+		clientFrame.getLoginPanel().getLogoutBtn().setEnabled(false);
+		clientFrame.getLoginPanel().getHostIp().setEnabled(true);
+		clientFrame.getLoginPanel().getServerPort().setEnabled(true);
+		clientFrame.getLoginPanel().getNickName().setEnabled(true);
+		clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(false);
+		clientFrame.getWaitingRoomPanel().getOutRoomBtn().setEnabled(false);
+		clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(false);
+		clientFrame.getWaitingRoomPanel().getSecretMsgBtn().setEnabled(false);
+		clientFrame.getChattingPanel().getMsgBtn().setEnabled(false);
+		clientFrame.getChattingPanel().getChatArea().setText("");
+		clientFrame.setTitle("Client Page");
 	}
 
 	// 유저 목록 갱신하기
 	@Override
 	public void connectedUser() {
-		userVector.add(data);
-		userList.setListData(userVector);
+		if (!data.equals(id)) {
+			userVector.add(data);
+			userList.setListData(userVector);
+		}
 	}
 
 	// 방 목록 갱신하기
@@ -212,6 +266,11 @@ public class Client implements Protocol {
 	public void userOut() {
 		userVector.remove(data);
 		userList.setListData(userVector);
+	}
+
+	// 로그아웃 서버호출
+	public void clickLogoutBtn() {
+		writer("Logout:" + id + ": ");
 	}
 
 	// 방 생성 서버호출
