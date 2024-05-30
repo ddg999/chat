@@ -217,6 +217,8 @@ public class Server {
 				if (myRoom.roomName.equals(data)) {
 					myRoomName = null;
 					myRoom.roomBroadCast("Chatting:퇴장:" + id + "님 퇴장");
+					// 해당 방의 기존 유저에게 새로운 유저를 방참가목록 갱신
+					myRoom.roomBroadCast("NewChatList:" + id + ":삭제");
 					serverMsgWriter("[방 퇴장] " + id + "_" + data + "\n");
 					myRoom.removeRoom(this);
 					writer("OutRoom:" + data + ": ");
@@ -230,21 +232,24 @@ public class Server {
 			for (int i = 0; i < madeRooms.size(); i++) { // 해당 이름의 방 찾기
 				MyRoom myRoom = madeRooms.elementAt(i);
 				if (myRoom.roomName.equals(data)) { // 해당 이름과 클라이언트에서 보낸 방 이름이 같으면
-
-					// 기존 유저에게 새로운 유저를 참가목록에 추가
+					myRoomName = myRoom.roomName;
+					// 해당 방의 기존 유저에게 새로운 유저를 방참가목록 갱신
 					myRoom.roomBroadCast("NewChatList:" + id + ": ");
 
-					myRoomName = myRoom.roomName;
-					myRoom.addUser(this); // 이 유저를 해당 방 ConnectUser 벡터에 추가
-					writer("EnterRoom:" + data + ": "); // 이 유저를 해당 방 참가목록에 추가
-					// 새로운 유저에게 기존 참가목록 갱신
+					// 이 유저를 해당 방 ConnectUser 벡터에 추가
+					myRoom.addUser(this);
+
+					// 이 유저를 클라이언트 측 방참가목록에 추가
+					writer("EnterRoom:" + data + ": ");
+
+					// 새로운 유저에게 해당 방 기존 유저를 방참가목록에 추가
 					for (String ChatUser : myRoom.roomUser) {
+
 						writer("EnteredChatList:" + ChatUser + ": ");
 					}
-
+					// 해당 방 채팅창에 입장알림
+					myRoom.roomBroadCast("Chatting:입장:" + id + "님 입장");
 					serverMsgWriter("[방 입장] " + data + " 방_" + id + "\n");
-					myRoom.roomBroadCast("Chatting:입장:" + id + "님 입장"); // 해당 방 채팅창에 입장알림
-
 				}
 			}
 		}
@@ -331,6 +336,7 @@ public class Server {
 
 		// 방에서 유저 나가기(제거), 방에 유저가 없으면 방 제거
 		private void removeRoom(ConnectedUser user) {
+			roomUser.remove(user.id);
 			myRoom.remove(user);
 			if (myRoom.isEmpty()) {
 				for (int i = 0; i < madeRooms.size(); i++) {

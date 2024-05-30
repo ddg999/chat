@@ -228,8 +228,9 @@ public class Client implements Protocol {
 	@Override
 	public void outRoom() {
 		myRoomName = null;
-		chatUserVector.remove(id);
+		chatUserVector.removeAllElements();
 		chatUserList.setListData(chatUserVector);
+
 		clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(true);
 		clientFrame.getWaitingRoomPanel().getOutRoomBtn().setEnabled(false);
 		clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(true);
@@ -264,8 +265,13 @@ public class Client implements Protocol {
 	}
 
 	public void newChatList() {
-		chatUserVector.add(data);
-		chatUserList.setListData(chatUserVector);
+		if (message.equals("삭제")) {
+			chatUserVector.remove(data);
+			chatUserList.setListData(chatUserVector);
+		} else {
+			chatUserVector.add(data);
+			chatUserList.setListData(chatUserVector);
+		}
 	}
 
 	public void enteredChatList() {
