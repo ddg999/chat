@@ -79,7 +79,7 @@ public class Server {
 
 		// 서버 측에서 관리 할 아이디, 방 이름 변수
 		private String id;
-		private String myRoomName;
+		private String myRoomName = "";
 
 		// 접속종료 변수
 		private boolean logout;
@@ -192,12 +192,14 @@ public class Server {
 				}
 			}
 			if (!duplicateRoom) {
-				MyRoom myRoom = new MyRoom(data, this);
-				madeRooms.add(myRoom);
+				MyRoom myRoom = new MyRoom(data, this); // 새로운 방 생성(방이름, 현재 연결된유저)
+				madeRooms.add(myRoom); // 만들어진 방 벡터에 새로운 방 추가
+				myRoomName = data;
 				serverMsgWriter("[방 생성] " + id + "_" + data + "\n");
 				newRoom();
 				writer("Chatting:입장:" + id + "님 입장");
 				writer("MakeRoom:" + data + ": ");
+				writer("NewChatList:" + id + ": ");
 			}
 		}
 
@@ -225,13 +227,24 @@ public class Server {
 		// 방 입장하기
 		@Override
 		public void enterRoom() {
-			for (int i = 0; i < madeRooms.size(); i++) {
+			for (int i = 0; i < madeRooms.size(); i++) { // 해당 이름의 방 찾기
 				MyRoom myRoom = madeRooms.elementAt(i);
-				if (myRoom.roomName.equals(data)) {
-					myRoom.addUser(this);
-					myRoom.roomBroadCast("Chatting:입장:" + id + "님 입장");
+				if (myRoom.roomName.equals(data)) { // 해당 이름과 클라이언트에서 보낸 방 이름이 같으면
+
+					// 기존 유저에게 새로운 유저를 참가목록에 추가
+					myRoom.roomBroadCast("NewChatList:" + id + ": ");
+
+					myRoomName = myRoom.roomName;
+					myRoom.addUser(this); // 이 유저를 해당 방 ConnectUser 벡터에 추가
+					writer("EnterRoom:" + data + ": "); // 이 유저를 해당 방 참가목록에 추가
+					// 새로운 유저에게 기존 참가목록 갱신
+					for (String ChatUser : myRoom.roomUser) {
+						writer("EnteredChatList:" + ChatUser + ": ");
+					}
+
 					serverMsgWriter("[방 입장] " + data + " 방_" + id + "\n");
-					writer("EnterRoom:" + data + ": ");
+					myRoom.roomBroadCast("Chatting:입장:" + id + "님 입장"); // 해당 방 채팅창에 입장알림
+
 				}
 			}
 		}
@@ -260,13 +273,13 @@ public class Server {
 		}
 
 		// 로그아웃
+		@Override
 		public void logout() {
 			serverMsgWriter("[알림] " + data + "님 로그아웃\n");
 			writer("Logout:" + data + ": ");
 
-			outRoom();
 			connectedUsers.remove(this);
-			broadCast("UserOut:" + id + ": ");
+			broadCast("UserOut:" + data + ": ");
 
 			logout = true;
 			try {
@@ -284,14 +297,12 @@ public class Server {
 					checkProtocol(msg);
 				}
 			} catch (IOException e) {
-				e.printStackTrace();
 				serverMsgWriter("[에러] " + id + "님 접속 끊김\n");
 				outRoom();
 				connectedUsers.remove(this);
 				broadCast("UserOut:" + id + ": ");
 			}
 		}
-
 	}
 
 	// 각 방을 관리하기 위한 클래스
@@ -302,16 +313,20 @@ public class Server {
 
 		// 방에 들어온 ConnectedUser 벡터
 		private Vector<ConnectedUser> myRoom = new Vector<>();
+		// 방에 들어온 유저명 벡터
+		private Vector<String> roomUser = new Vector<>();
 
 		// 방 생성자
 		public MyRoom(String roomName, ConnectedUser connectedUser) {
 			this.roomName = roomName;
 			this.myRoom.add(connectedUser);
+			roomUser.add(connectedUser.id);
 		}
 
 		// 방에 유저 추가
 		private void addUser(ConnectedUser connectedUser) {
 			myRoom.add(connectedUser);
+			roomUser.add(connectedUser.id);
 		}
 
 		// 방에서 유저 나가기(제거), 방에 유저가 없으면 방 제거
@@ -333,7 +348,7 @@ public class Server {
 			}
 		}
 
-		// 방에 있는 모든 유저에게 채팅 전송
+		// 방에 있는 모든 유저에게 전송
 		private void roomBroadCast(String msg) {
 			for (int i = 0; i < myRoom.size(); i++) {
 				ConnectedUser user = myRoom.elementAt(i);

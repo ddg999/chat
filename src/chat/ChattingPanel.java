@@ -7,9 +7,11 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.Vector;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -21,6 +23,7 @@ public class ChattingPanel extends JPanel {
 
 	private ImageIcon background = new ImageIcon("images/background_bee.jpg");
 	private JPanel chatPanel;
+	private JPanel listPanel;
 	private JPanel msgPanel;
 	private ScrollPane scrollPane;
 
@@ -37,18 +40,27 @@ public class ChattingPanel extends JPanel {
 
 	private void initData() {
 		chatPanel = new JPanel();
+		listPanel = new JPanel();
 		msgPanel = new JPanel();
 		scrollPane = new ScrollPane();
 		chatArea = new JTextArea();
-		msgBox = new JTextField(30);
+		msgBox = new JTextField(25);
 		msgBtn = new JButton("전송");
 
-		chatPanel.setBounds(30, 30, 420, 400);
+		chatPanel.setBounds(10, 30, 360, 400);
 		chatPanel.setBackground(Color.white);
 		chatPanel.setBorder(new TitledBorder(new LineBorder(Color.white, 3), "채팅창"));
-		scrollPane.setBounds(30, 30, 400, 370);
+		scrollPane.setBounds(10, 30, 340, 370);
 
-		msgPanel.setBounds(30, 430, 420, 40);
+		listPanel.setBounds(370, 40, 100, 420);
+		listPanel.setBackground(Color.white);
+		listPanel.setBorder(new TitledBorder(new LineBorder(Color.black, 1), "참가자"));
+
+		// 참가자 갱신
+//		chatUserVector.add(data);
+//		chatUserList.setListData(chatUserVector);
+
+		msgPanel.setBounds(10, 430, 360, 40);
 		msgPanel.setBackground(Color.white);
 
 		msgBtn.setEnabled(false);
@@ -61,6 +73,8 @@ public class ChattingPanel extends JPanel {
 		add(chatPanel);
 		chatPanel.add(scrollPane);
 		scrollPane.add(chatArea);
+		add(listPanel);
+		listPanel.add(mContext.getChatUserList());
 		add(msgPanel);
 		msgPanel.add(msgBox);
 		msgPanel.add(msgBtn);
@@ -83,7 +97,6 @@ public class ChattingPanel extends JPanel {
 				}
 			}
 		});
-
 	}
 
 	private void sendMessage() {

@@ -26,12 +26,14 @@ public class Client implements Protocol {
 	private Socket socket;
 	private PrintWriter socketWriter;
 	private BufferedReader socketReader;
-	private BufferedReader keyboardReader;
 
 	private Vector<String> userVector = new Vector<>();
 	private Vector<String> roomVector = new Vector<>();
 	private JList<String> userList = new JList<>();
 	private JList<String> roomList = new JList<>();
+
+	private Vector<String> chatUserVector = new Vector<>();
+	private JList<String> chatUserList = new JList<>();
 
 	// 프로토콜 변수
 	private String protocol;
@@ -121,6 +123,10 @@ public class Client implements Protocol {
 				loginError();
 			} else if (protocol.equals("Logout")) {
 				logout();
+			} else if (protocol.equals("NewChatList")) {
+				newChatList();
+			} else if (protocol.equals("EnteredChatList")) {
+				enteredChatList();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -156,6 +162,8 @@ public class Client implements Protocol {
 		}
 	}
 
+	// 로그아웃
+	@Override
 	public void logout() {
 		logout = true;
 		try {
@@ -209,7 +217,7 @@ public class Client implements Protocol {
 		clientFrame.getChattingPanel().getMsgBtn().setEnabled(true);
 	}
 
-	// 방 목록 추가하기
+	// 방 목록 갱신하기
 	@Override
 	public void newRoom() {
 		roomVector.add(data);
@@ -220,6 +228,8 @@ public class Client implements Protocol {
 	@Override
 	public void outRoom() {
 		myRoomName = null;
+		chatUserVector.remove(id);
+		chatUserList.setListData(chatUserVector);
 		clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(true);
 		clientFrame.getWaitingRoomPanel().getOutRoomBtn().setEnabled(false);
 		clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(true);
@@ -230,6 +240,8 @@ public class Client implements Protocol {
 	@Override
 	public void enterRoom() {
 		myRoomName = data;
+		chatUserVector.add(id);
+		chatUserList.setListData(chatUserVector); // 나를 참가목록에 추가
 		clientFrame.getWaitingRoomPanel().getMakeRoomBtn().setEnabled(false);
 		clientFrame.getWaitingRoomPanel().getOutRoomBtn().setEnabled(true);
 		clientFrame.getWaitingRoomPanel().getEnterRoomBtn().setEnabled(false);
@@ -239,6 +251,7 @@ public class Client implements Protocol {
 	// 채팅하기
 	@Override
 	public void chatting() {
+		// TODO 안쓰는 조건 없애기
 		if (id.equals(data)) {
 			clientFrame.getChattingPanel().getChatArea().append("[나] \n" + message + "\n");
 		} else if (data.equals("입장")) {
@@ -247,6 +260,18 @@ public class Client implements Protocol {
 			clientFrame.getChattingPanel().getChatArea().append("[" + data + "] " + message + "\n");
 		} else {
 			clientFrame.getChattingPanel().getChatArea().append("[" + data + "]\n" + message + "\n");
+		}
+	}
+
+	public void newChatList() {
+		chatUserVector.add(data);
+		chatUserList.setListData(chatUserVector);
+	}
+
+	public void enteredChatList() {
+		if (!data.equals(id)) {
+			chatUserVector.add(data);
+			chatUserList.setListData(chatUserVector);
 		}
 	}
 
@@ -270,6 +295,7 @@ public class Client implements Protocol {
 
 	// 로그아웃 서버호출
 	public void clickLogoutBtn() {
+		writer("OutRoom:" + myRoomName + ": ");
 		writer("Logout:" + id + ": ");
 	}
 
@@ -317,6 +343,14 @@ public class Client implements Protocol {
 
 	public Vector<String> getRoomVector() {
 		return roomVector;
+	}
+
+	public Vector<String> getChatUserVector() {
+		return chatUserVector;
+	}
+
+	public JList<String> getChatUserList() {
+		return chatUserList;
 	}
 
 	public String getMyRoomName() {

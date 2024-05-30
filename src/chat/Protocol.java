@@ -18,4 +18,6 @@ public interface Protocol {
 	void chatting();
 
 	void secretMsg();
+	
+	void logout();
 }
