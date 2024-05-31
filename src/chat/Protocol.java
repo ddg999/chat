@@ -5,11 +5,9 @@ public interface Protocol {
 
 	void connectedUser();
 
-	void madeRoom();
-
 	void makeRoom();
 
-	void newRoom();
+	void madeRoom();
 
 	void outRoom();
 
@@ -18,6 +16,6 @@ public interface Protocol {
 	void chatting();
 
 	void secretMsg();
-	
+
 	void logout();
 }

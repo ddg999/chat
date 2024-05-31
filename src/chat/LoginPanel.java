@@ -61,12 +61,16 @@ public class LoginPanel extends JPanel implements ActionListener {
 	private void login() {
 		if (!hostIp.getText().equals("") && !serverPort.getText().equals("") && !nickName.getText().equals("")) {
 			String ip = hostIp.getText();
-			try {
-				int port = Integer.parseInt(serverPort.getText());
-				String name = nickName.getText();
-				mContext.clickLoginBtn(ip, port, name);
-			} catch (NumberFormatException e) {
-				JOptionPane.showMessageDialog(null, "잘못된 입력입니다");
+			if (Integer.parseInt(serverPort.getText()) >= 1 && Integer.parseInt(serverPort.getText()) <= 65535) {
+				try {
+					int port = Integer.parseInt(serverPort.getText());
+					String name = nickName.getText();
+					mContext.clickLoginBtn(ip, port, name);
+				} catch (NumberFormatException e) {
+					JOptionPane.showMessageDialog(null, "잘못된 입력입니다");
+				}
+			} else {
+				JOptionPane.showMessageDialog(null, "잘못된 포트 번호입니다.\n포트 번호 범위(1~65535)");
 			}
 		} else {
 			JOptionPane.showMessageDialog(null, "빈 칸을 채워주세요");

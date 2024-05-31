@@ -22,6 +22,7 @@ public class ServerFrame extends JFrame {
 	private JLabel background;
 	private JPanel serverMsgPanel;
 	private JPanel portPanel;
+	private JPanel userListPanel;
 	private JButton startBtn;
 	private JButton exitBtn;
 	private JLabel portNumber;
@@ -44,11 +45,16 @@ public class ServerFrame extends JFrame {
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		serverMsgPanel = new JPanel();
-		serverMsgPanel.setBounds(45, 80, 400, 330);
+		serverMsgPanel.setBounds(45, 80, 280, 330);
 		serverMsgPanel.setBackground(Color.white);
 		serverMsgPanel.setBorder(new TitledBorder(new LineBorder(Color.white, 3), "서버메세지"));
 		scrollPane = new ScrollPane();
-		scrollPane.setBounds(45, 80, 380, 300);
+		scrollPane.setBounds(45, 80, 260, 300);
+
+		userListPanel = new JPanel();
+		userListPanel.setBounds(335, 80, 100, 330);
+		userListPanel.setBackground(Color.white);
+		userListPanel.setBorder(new TitledBorder(new LineBorder(Color.black, 1), "유저목록"));
 
 		serverMsg = new JTextArea();
 
@@ -76,6 +82,9 @@ public class ServerFrame extends JFrame {
 		scrollPane.add(serverMsg);
 		serverMsg.setEnabled(false);
 
+		add(userListPanel);
+		userListPanel.add(mContext.getUserlist());
+
 		add(portPanel);
 		portPanel.add(portNumber);
 		portPanel.add(textPortNumber);
@@ -89,9 +98,14 @@ public class ServerFrame extends JFrame {
 			public void mouseClicked(MouseEvent e) {
 				if (startBtn.isEnabled()) {
 					try {
-						mContext.startServer(Integer.valueOf(textPortNumber.getText()));
+						if (Integer.valueOf(textPortNumber.getText()) >= 1
+								&& Integer.valueOf(textPortNumber.getText()) <= 65535) {
+							mContext.startServer(Integer.valueOf(textPortNumber.getText()));
+						} else {
+							JOptionPane.showMessageDialog(null, "잘못된 포트 번호입니다.\n포트 번호 범위(1~65535)");
+						}
 					} catch (NumberFormatException e2) {
-						JOptionPane.showMessageDialog(null, "잘못된 포트 번호입니다.");
+						JOptionPane.showMessageDialog(null, "잘못된 포트 번호입니다.\n포트 번호 범위(1~65535)");
 					}
 				}
 			}
@@ -102,7 +116,6 @@ public class ServerFrame extends JFrame {
 				System.exit(0);
 			}
 		});
-
 	}
 
 	public JButton getStartBtn() {

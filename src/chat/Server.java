@@ -6,26 +6,33 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import java.util.Vector;
 
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 
 public class Server {
+	// 서버 프레임
 	private ServerFrame serverFrame;
+	private JTextArea serverMsg;
 
+	// 서버 소켓
 	private ServerSocket serverSocket;
 	private Socket socket;
-
-	private JTextArea serverMsg;
 
 	// 프로토콜 변수
 	private String protocol;
 	private String data;
 	private String message;
 
-	// 접속한 유저 벡터
+	// 접속된 클라이언트(유저) 벡터
 	private Vector<ConnectedUser> connectedUsers = new Vector<>();
+
+	// 접속된 유저 이름만 관리하는 벡터
+	private Vector<String> userVector = new Vector<>();
+	private JList<String> userlist = new JList<>();
 
 	// 만들어진 방 벡터
 	private Vector<MyRoom> madeRooms = new Vector<>();
@@ -40,7 +47,7 @@ public class Server {
 	public void startServer(int port) {
 		try {
 			serverSocket = new ServerSocket(port);
-			serverMsgWriter("[알림] 서버 생성, 포트 번호 : " + port + "\n");
+			serverMsgWriter("[서버] 소켓 생성, 포트 번호 : " + port + "\n");
 			connectClient();
 			serverFrame.getStartBtn().setEnabled(false);
 		} catch (IOException e) {
@@ -63,13 +70,14 @@ public class Server {
 		}).start();
 	}
 
-	// 서버 -> 연결된 클라이언트 전체에 방송하기
+	// 서버 -> 접속된 유저 전체에게 방송하기
 	private void broadCast(String msg) {
 		for (ConnectedUser connectedUser : connectedUsers) {
 			connectedUser.writer(msg);
 		}
 	}
 
+	// 접속된 유저를 관리하기 위한 클래스
 	private class ConnectedUser extends Thread implements Protocol {
 		private Socket socket;
 
@@ -84,6 +92,7 @@ public class Server {
 		// 접속종료 변수
 		private boolean logout;
 
+		// 접속된 유저 생성자
 		public ConnectedUser(Socket socket) {
 			this.socket = socket;
 			connectIO();
@@ -107,13 +116,13 @@ public class Server {
 		// 새로운 유저 추가
 		@Override
 		public void newUser() {
-			// 닉네임 중복 구분 변수
-			boolean duplicateName = false;
+			// 닉네임 중복 구분
+			boolean isError = false;
 			for (ConnectedUser connectedUser : connectedUsers) {
 				if (data.equals(connectedUser.id)) {
-					serverMsgWriter("[로그인에러] 중복닉네임_" + data + "\n");
+					serverMsgWriter("[로그인실패] " + data + " [ErrorCode: ID중복]\n");
 					writer("LoginError:" + data + ": ");
-					duplicateName = true;
+					isError = true;
 					logout = true;
 					try {
 						socket.close();
@@ -123,9 +132,10 @@ public class Server {
 					break;
 				}
 			}
-			if (!duplicateName) {
+			if (!isError) {
 				id = data;
-				serverMsgWriter("[알림] " + id + "님 로그인\n");
+				serverMsgWriter("[서버] " + id + "님 로그인\n");
+				userList(true);
 				connectedUsers.add(this);
 				broadCast("NewUser:" + id + ": ");
 
@@ -144,12 +154,16 @@ public class Server {
 		}
 
 		// 새로운 유저에게 만들어진 방 목록 갱신
-		@Override
 		public void madeRoom() {
 			for (int i = 0; i < madeRooms.size(); i++) {
 				MyRoom myRoom = madeRooms.elementAt(i);
 				writer("MadeRoom:" + myRoom.roomName + ": ");
 			}
+		}
+
+		// 기존 유저에게 방 목록 갱신
+		public void newRoom() {
+			broadCast("MadeRoom:" + data + ": ");
 		}
 
 		// 프로토콜 체크 (구분자 :) protocol:data:message
@@ -183,30 +197,26 @@ public class Server {
 		@Override
 		public void makeRoom() {
 			// 방 이름 중복 구분 변수
-			boolean duplicateRoom = false;
+			boolean isError = false;
 			for (MyRoom myRoom : madeRooms) {
 				if (data.equals(myRoom.roomName)) {
-					serverMsgWriter("[방생성에러] 방이름중복_" + data + "\n");
-					duplicateRoom = true;
+					serverMsgWriter("[방 생성실패] " + data + "_" + id + " [Error: 방이름중복]\n");
+					writer("MakeRoom:" + data + ":RoomNameError");
+					isError = true;
 					break;
 				}
 			}
-			if (!duplicateRoom) {
+			if (!isError) {
 				MyRoom myRoom = new MyRoom(data, this); // 새로운 방 생성(방이름, 현재 연결된유저)
-				madeRooms.add(myRoom); // 만들어진 방 벡터에 새로운 방 추가
+				madeRooms.add(myRoom);
 				myRoomName = data;
-				serverMsgWriter("[방 생성] " + id + "_" + data + "\n");
+				serverMsgWriter("[방 퇴장] " + data + "_" + id + "\n");
 				newRoom();
+				serverMsgWriter("[방 입장] " + data + "_" + id + "\n");
 				writer("Chatting:입장:" + id + "님 입장");
 				writer("MakeRoom:" + data + ": ");
 				writer("NewChatList:" + id + ": ");
 			}
-		}
-
-		// 방 목록 갱신
-		@Override
-		public void newRoom() {
-			broadCast("NewRoom:" + data + ": ");
 		}
 
 		// 방 퇴장하기
@@ -217,9 +227,10 @@ public class Server {
 				if (myRoom.roomName.equals(data)) {
 					myRoomName = null;
 					myRoom.roomBroadCast("Chatting:퇴장:" + id + "님 퇴장");
-					// 해당 방의 기존 유저에게 새로운 유저를 방참가목록 갱신
+					// 해당 방의 기존 유저에게 방 참가목록 갱신
 					myRoom.roomBroadCast("NewChatList:" + id + ":삭제");
-					serverMsgWriter("[방 퇴장] " + id + "_" + data + "\n");
+					// 해당 방 채팅창에 퇴장 알림
+					serverMsgWriter("[방 퇴장] " + data + "_" + id + "\n");
 					myRoom.removeRoom(this);
 					writer("OutRoom:" + data + ": ");
 				}
@@ -233,23 +244,17 @@ public class Server {
 				MyRoom myRoom = madeRooms.elementAt(i);
 				if (myRoom.roomName.equals(data)) { // 해당 이름과 클라이언트에서 보낸 방 이름이 같으면
 					myRoomName = myRoom.roomName;
-					// 해당 방의 기존 유저에게 새로운 유저를 방참가목록 갱신
 					myRoom.roomBroadCast("NewChatList:" + id + ": ");
-
-					// 이 유저를 해당 방 ConnectUser 벡터에 추가
 					myRoom.addUser(this);
-
-					// 이 유저를 클라이언트 측 방참가목록에 추가
 					writer("EnterRoom:" + data + ": ");
 
-					// 새로운 유저에게 해당 방 기존 유저를 방참가목록에 추가
+					// 새로운 유저에게 해당 방 기존 유저를 방 참가목록에 추가
 					for (String ChatUser : myRoom.roomUser) {
-
 						writer("EnteredChatList:" + ChatUser + ": ");
 					}
-					// 해당 방 채팅창에 입장알림
+					// 해당 방 채팅창에 입장 알림
 					myRoom.roomBroadCast("Chatting:입장:" + id + "님 입장");
-					serverMsgWriter("[방 입장] " + data + " 방_" + id + "\n");
+					serverMsgWriter("[방 입장] " + data + "_" + id + "\n");
 				}
 			}
 		}
@@ -280,8 +285,9 @@ public class Server {
 		// 로그아웃
 		@Override
 		public void logout() {
-			serverMsgWriter("[알림] " + data + "님 로그아웃\n");
+			serverMsgWriter("[서버] " + data + "님 로그아웃\n");
 			writer("Logout:" + data + ": ");
+			userList(false);
 
 			connectedUsers.remove(this);
 			broadCast("UserOut:" + data + ": ");
@@ -294,6 +300,16 @@ public class Server {
 			}
 		}
 
+		private void userList(boolean flag) {
+			if (flag) {
+				userVector.add(id);
+				userlist.setListData(userVector);
+			} else {
+				userVector.remove(id);
+				userlist.setListData(userVector);
+			}
+		}
+
 		@Override
 		public void run() {
 			try {
@@ -302,8 +318,9 @@ public class Server {
 					checkProtocol(msg);
 				}
 			} catch (IOException e) {
-				serverMsgWriter("[에러] " + id + "님 접속 끊김\n");
+				serverMsgWriter("[서버] " + id + "님 접속 끊김\n");
 				outRoom();
+				userList(false);
 				connectedUsers.remove(this);
 				broadCast("UserOut:" + id + ": ");
 			}
@@ -343,7 +360,6 @@ public class Server {
 					MyRoom myRoom = madeRooms.elementAt(i);
 
 					if (myRoom.roomName.equals(roomName)) {
-						// 해당 방을 만들어진 방 벡터에서 삭제
 						madeRooms.remove(this);
 						serverMsgWriter("[방 삭제] " + user.id + "_" + data + "\n");
 						roomBroadCast("OutRoom:" + data + ": ");
@@ -366,6 +382,18 @@ public class Server {
 	// 서버에 메세지 출력
 	private void serverMsgWriter(String msg) {
 		serverMsg.append(msg);
+	}
+
+	// 유저 목록 클릭
+	public void userListClick() {
+		for (int i = 0; i < connectedUsers.size(); i++) {
+			ConnectedUser user = connectedUsers.elementAt(i);
+			System.out.println(user.id);
+		}
+	}
+
+	public JList<String> getUserlist() {
+		return userlist;
 	}
 
 	public static void main(String[] args) {
